@@ -3,6 +3,7 @@
 
 % clear memory
 clearvars
+clc
 % start the timer
 tic
 % where to save the data
@@ -16,22 +17,31 @@ omega_0=2*pi/24.5
 omega_S=2*pi/24
 p=0 %time zone shift %ToDo: make function of t
 kappa=1
-R=1 %1/(2*omega_S^4) %coupling cost strength %ToDo: set below R_c(0)
-F=0 %sun cost strength
+R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
+F=1 %sun cost strength
 
 % number of times to iterate between HJB and Kolmogorov
 num_iterations=40 %ToDo
 
+%initial configurations
+initial_uniform=true
+initial_sine=false
+initial_cosine=false
+initial_dirac_0=false
+initial_dirac_omega_0=false
+initial_dirac_omega_S=false
+initial_use_last_iterate=false
+
 % this is the maximum alpha that can be reached to meet
 % the stability condition
-alpha_max=1
+alpha_max=5
 alpha_min=-alpha_max
 
 % dynamics: dtheta=(omega_0+alpha)*dt+sigma*dW
 sigma=0.1
 
 % number of time steps
-num_time_points=1001
+num_time_points=5340
 % number of grid points in theta
 num_x=128;
 delta_x=2*pi/num_x;
@@ -54,26 +64,41 @@ x_grid=linspace(x_min,x_max,num_x);
 K=1;
 % initialize mu
 mu=zeros(num_time_points,num_x);
-%uniform
-%mu(:,:)=1/(num_x*delta_x);
-%sine
-% for i=1:num_time_points
-%     for j=1:num_x
-%         mu(i,j)=(1+sin(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-%     end
-% end
-%cosine
-% for i=1:num_time_points
-%     for j=1:num_x
-%         mu(i,j)=(1+cos(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-%     end
-% end
-%dirac at 0
-% mu(:,1)=1/delta_x;
-%dirac at omega_0*t
-for i=1:num_time_points
-    index=round(omega_0*t_grid(i)/delta_x)+1;
-    mu(i,index)=1/delta_x;
+
+if initial_uniform
+    mu(:,:)=1/(num_x*delta_x);
+end
+if initial_sine
+    for i=1:num_time_points
+        for j=1:num_x
+            mu(i,j)=(1+sin(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
+        end
+    end
+end
+if initial_cosine
+    for i=1:num_time_points
+        for j=1:num_x
+            mu(i,j)=(1+cos(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
+        end
+    end
+end
+if initial_dirac_0
+    mu(:,1)=1/delta_x;
+end
+if initial_dirac_omega_0
+    for i=1:num_time_points
+        index=round(omega_0*t_grid(i)/delta_x)+1;
+        mu(i,index)=1/delta_x;
+    end
+end
+if initial_dirac_omega_S
+    for i=1:num_time_points
+        index=round(omega_S*t_grid(i)/delta_x)+1;
+        mu(i,index)=1/delta_x;
+    end
+end
+if initial_use_last_iterate
+    mu(:,:)=1/(num_x*delta_x);
 end
 value=sum(sum(mu(1,:)))*delta_x;
 if value>1+threshold || value<1-threshold
@@ -124,7 +149,7 @@ for counter=1:num_time_points-1
             c_bar(i)=c_bar(i)+1/2*sin((x_grid(j)-x_grid(i))/2)^2*mu_curr(j)*delta_x;
         end
     end
-    c_sun=1/2*sin(omega_S*t_n+p-x_grid).^2;
+    c_sun=1/2*sin((omega_S*t_n+p-x_grid)/2).^2;
 
     if K>1
         V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun);
@@ -167,16 +192,21 @@ value=max(max(V(:,:)))
 %% Given V, solve for mu (explicitly forward in time)
 max_alpha=0;
 mu=zeros(num_time_points,num_x);
-%uniform
-%mu(1,:)=1/(num_x*delta_x);
-%sine
-%mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
-%cosine
-% mu(1,:)=(1+cos(x_grid))/(num_x*delta_x);
-%dirac at 0
-% mu(1,1)=1/delta_x;
-%dirac at omega_0*t
-mu(1,1)=1/delta_x;
+if initial_uniform
+    mu(1,:)=1/(num_x*delta_x);
+end
+if initial_sine
+    mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
+end
+if initial_cosine
+    mu(1,:)=(1+cos(x_grid))/(num_x*delta_x);
+end
+if initial_dirac_0 || initial_dirac_omega_0 || initial_dirac_omega_S
+    mu(1,1)=1/delta_x;
+end
+if initial_use_last_iterate
+    mu(1,:)=old_mu(num_time_points,:);
+end
 
 for n=1:num_time_points-1
     t_n=t_grid(n);
