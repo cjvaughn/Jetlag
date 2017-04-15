@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_7_Ex1'
+jobstring='april_15_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -18,13 +18,19 @@ omega_S=2*pi/24
 p=0 %time zone shift %ToDo: make function of t
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
-F=1 %sun cost strength
+F=0.1 %sun cost strength
 
 % number of times to iterate between HJB and Kolmogorov
-num_iterations=40 %ToDo
+num_iterations=100 %ToDo
+
+linearize_HJB=false
+make_T_day=true
+num_days=2;
 
 %initial configurations
 initial_uniform=true
+initial_sine_0=false
+initial_cosine_0=false
 initial_sine=false
 initial_cosine=false
 initial_dirac_0=false
@@ -34,22 +40,29 @@ initial_use_last_iterate=false
 
 % this is the maximum alpha that can be reached to meet
 % the stability condition
-alpha_max=5
+alpha_max=0.1
 alpha_min=-alpha_max
 
 % dynamics: dtheta=(omega_0+alpha)*dt+sigma*dW
 sigma=0.1
 
 % number of time steps
-num_time_points=5340
+num_time_points=1001;
 % number of grid points in theta
-num_x=128;
+num_x=256;
 delta_x=2*pi/num_x;
 x_min=0
 x_max=2*pi-delta_x;
 
 % grid size in time
 delta_t=0.5*1/(sigma^2/(delta_x)^2+((omega_0+alpha_max)/(delta_x)));
+if make_T_day
+    hours=24*num_days;
+    num_t_per_day=ceil(24/delta_t);
+    delta_t=24/num_t_per_day;
+    num_time_points=num_days*num_t_per_day+1;
+end
+num_time_points
 delta_t
 % finite time horizon, T
 T=(num_time_points-1)*delta_t;
@@ -67,6 +80,20 @@ mu=zeros(num_time_points,num_x);
 
 if initial_uniform
     mu(:,:)=1/(num_x*delta_x);
+end
+if initial_sine_0
+    for i=1:num_time_points
+        for j=1:num_x
+            mu(i,j)=(1+sin(omega_0*t_grid(i)-x_grid(j)))/(num_x*delta_x);
+        end
+    end
+end
+if initial_cosine_0
+    for i=1:num_time_points
+        for j=1:num_x
+            mu(i,j)=(1+cos(omega_0*t_grid(i)-x_grid(j)))/(num_x*delta_x);
+        end
+    end
 end
 if initial_sine
     for i=1:num_time_points
@@ -151,7 +178,7 @@ for counter=1:num_time_points-1
     end
     c_sun=1/2*sin((omega_S*t_n+p-x_grid)/2).^2;
 
-    if K>1
+    if K>1 && linearize_HJB
         V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun);
     else
         V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(alpha.*alpha)+kappa*c_bar+F*c_sun);
@@ -194,6 +221,12 @@ max_alpha=0;
 mu=zeros(num_time_points,num_x);
 if initial_uniform
     mu(1,:)=1/(num_x*delta_x);
+end
+if initial_sine_0
+    mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
+end
+if initial_cosine_0
+    mu(1,:)=(1+cos(x_grid))/(num_x*delta_x);
 end
 if initial_sine
     mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
@@ -269,10 +302,14 @@ value
 K=K+1;
 
 %% Final calculations and save data
+final_mu=squeeze(mu(num_time_points,:));
+save(strcat(jobstring,'_final_mu.mat'),'final_mu')
 
-
-
-
+mu_short=zeros(num_days+1,num_x);
+for i=1:num_days+1
+    mu_short(i,:)=mu((i-1)*num_t_per_day+1,:);
+end
+save(strcat(jobstring,'_mu_short.mat'),'mu_short')
 
 
 
