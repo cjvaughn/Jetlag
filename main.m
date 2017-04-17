@@ -333,6 +333,22 @@ end
 save(strcat(jobstring,'_mu_hourly.mat'),'mu_hourly')
 
 
+initial_V=squeeze(V(1,:));
+save(strcat(jobstring,'_initial_V.mat'),'initial_V')
+
+V_daily=zeros(num_days+1,num_x);
+for i=1:num_days+1
+    V_daily(i,:)=V((i-1)*num_t_per_day+1,:);
+end
+save(strcat(jobstring,'_V_daily.mat'),'V_daily')
+
+V_hourly=zeros(num_hours+1,num_x);
+for i=1:num_hours+1
+    V_hourly(i,:)=V((i-1)*num_t_per_hour+1,:);
+end
+save(strcat(jobstring,'_V_hourly.mat'),'V_hourly')
+
+
 
 end %This ends the while loop
 
