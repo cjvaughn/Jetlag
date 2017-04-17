@@ -37,6 +37,7 @@ initial_dirac_0=false
 initial_dirac_omega_0=false
 initial_dirac_omega_S=false
 initial_use_last_iterate=false
+initial_use_mu_guess=false
 
 % this is the maximum alpha that can be reached to meet
 % the stability condition
@@ -127,6 +128,16 @@ if initial_dirac_omega_S
 end
 if initial_use_last_iterate
     mu(:,:)=1/(num_x*delta_x);
+end
+if initial_use_mu_guess
+    mu_guess=load('mu_guess.mat');
+    mu_guess=mu_guess.mu_guess;
+    for k=1:num_time_points
+        t=t_grid(k);
+        index=round(t/24*num_x);
+        index=mod(index,num_x);
+        mu(k,:)=circshift(mu_guess,index,2);
+    end
 end
 value=sum(sum(mu(1,:)))*delta_x;
 if value>1+threshold || value<1-threshold
@@ -240,6 +251,9 @@ if initial_dirac_0 || initial_dirac_omega_0 || initial_dirac_omega_S
 end
 if initial_use_last_iterate
     mu(1,:)=old_mu(num_time_points,:);
+end
+if initial_use_mu_guess
+    mu(1,:)=mu_guess;
 end
 
 for n=1:num_time_points-1
