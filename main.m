@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_15_Ex1'
+jobstring='april_17_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -25,7 +25,7 @@ num_iterations=100 %ToDo
 
 linearize_HJB=false
 make_T_day=true
-num_days=2;
+num_days=40
 
 %initial configurations
 initial_uniform=true
@@ -57,10 +57,11 @@ x_max=2*pi-delta_x;
 % grid size in time
 delta_t=0.5*1/(sigma^2/(delta_x)^2+((omega_0+alpha_max)/(delta_x)));
 if make_T_day
-    hours=24*num_days;
-    num_t_per_day=ceil(24/delta_t);
-    delta_t=24/num_t_per_day;
-    num_time_points=num_days*num_t_per_day+1;
+    num_hours=24*num_days;
+    num_t_per_hour=ceil(1/delta_t);
+    delta_t=1/num_t_per_hour;
+    num_time_points=num_hours*num_t_per_hour+1;
+    num_t_per_day=24*num_t_per_hour;
 end
 num_time_points
 delta_t
@@ -305,11 +306,17 @@ K=K+1;
 final_mu=squeeze(mu(num_time_points,:));
 save(strcat(jobstring,'_final_mu.mat'),'final_mu')
 
-mu_short=zeros(num_days+1,num_x);
+mu_daily=zeros(num_days+1,num_x);
 for i=1:num_days+1
-    mu_short(i,:)=mu((i-1)*num_t_per_day+1,:);
+    mu_daily(i,:)=mu((i-1)*num_t_per_day+1,:);
 end
-save(strcat(jobstring,'_mu_short.mat'),'mu_short')
+save(strcat(jobstring,'_mu_daily.mat'),'mu_daily')
+
+mu_hourly=zeros(num_hours+1,num_x);
+for i=1:num_hours+1
+    mu_hourly(i,:)=mu((i-1)*num_t_per_hour+1,:);
+end
+save(strcat(jobstring,'_mu_hourly.mat'),'mu_hourly')
 
 
 
