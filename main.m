@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_17_Ex1'
+jobstring='april_17_Ex3'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -28,7 +28,7 @@ make_T_day=true
 num_days=40
 
 %initial configurations
-initial_uniform=true
+initial_uniform=false
 initial_sine_0=false
 initial_cosine_0=false
 initial_sine=false
@@ -37,7 +37,13 @@ initial_dirac_0=false
 initial_dirac_omega_0=false
 initial_dirac_omega_S=false
 initial_use_last_iterate=false
-initial_use_mu_guess=false
+initial_use_mu_guess=true
+use_V_guess=true
+
+if use_V_guess
+    V_guess=load('V_guess.mat');
+    V_guess=V_guess.V_guess;
+end
 
 % this is the maximum alpha that can be reached to meet
 % the stability condition
@@ -161,6 +167,9 @@ old_mu=mu;
 max_alpha=0;
 V=zeros(num_time_points,num_x);
 V(num_time_points,:)=0;
+if use_V_guess
+    V(num_time_points,:)=V_guess;
+end
 
 max_diff_alpha=0;
 for counter=1:num_time_points-1
