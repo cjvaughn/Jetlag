@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_18_Ex1'
+jobstring='april_19_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -15,13 +15,13 @@ threshold=10^(-5)
 
 omega_0=2*pi/24.5
 omega_S=2*pi/24
-p=0 %time zone shift %ToDo: make function of t
+p=3*pi/4 %time zone shift %ToDo: make function of t
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
-F=10 %sun cost strength
+F=0.1 %sun cost strength
 
 % number of times to iterate between HJB and Kolmogorov
-num_iterations=100 %ToDo
+num_iterations=200 %ToDo
 
 linearize_HJB=false
 make_T_day=true
@@ -38,18 +38,23 @@ initial_dirac_omega_0=false
 initial_dirac_omega_S=false
 initial_use_last_iterate=false
 initial_use_mu_guess=true
-mu_guess_to_use='mu_guess_F_2.mat'
+mu_guess_to_use='mu_guess.mat'
 use_V_guess=true
-V_guess_to_use='V_guess_F_2.mat'
+V_guess_to_use='V_guess.mat'
+shift_V_guess_by_p=true
 
 if use_V_guess
     V_guess=load(V_guess_to_use);
     V_guess=V_guess.V_guess;
 end
+if shift_V_guess_by_p
+    index=round(p/(2*pi)*num_x);
+    V_guess=circshift(V_guess,-index,2); %shift to right for positive p
+end
 
 % this is the maximum alpha that can be reached to meet
 % the stability condition
-alpha_max=0.4
+alpha_max=0.1
 alpha_min=-alpha_max
 
 % dynamics: dtheta=(omega_0+alpha)*dt+sigma*dW
