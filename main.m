@@ -43,13 +43,15 @@ use_V_guess=true
 V_guess_to_use='V_guess.mat'
 shift_V_guess_by_p=true
 
+
+num_x=256
 if use_V_guess
     V_guess=load(V_guess_to_use);
     V_guess=V_guess.V_guess;
 end
 if shift_V_guess_by_p
     index=round(p/(2*pi)*num_x);
-    V_guess=circshift(V_guess,-index,2); %shift to right for positive p
+    V_guess=circshift(V_guess,index,2); %shift to right for positive p
 end
 
 % this is the maximum alpha that can be reached to meet
@@ -63,7 +65,6 @@ sigma=0.1
 % number of time steps
 num_time_points=1001;
 % number of grid points in theta
-num_x=256
 delta_x=2*pi/num_x;
 x_min=0
 x_max=2*pi-delta_x;

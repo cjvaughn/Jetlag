@@ -4,12 +4,19 @@ x_min=0
 x_max=2*pi-delta_x;
 x_grid=linspace(x_min,x_max,num_x);
 
-thing=V_hourly;
+thing=mu_daily;
+normalize=false;
 
 time=1;
-f=thing(time,:);
 num_time_points=size(thing(:,1),1);
 
+if normalize
+    %thing2=sum(thing')/num_time_points;
+    thing2=min(thing');
+    thing=thing-thing2';
+end
+
+f=thing(time,:);
 plot(x_grid,f)
 title('mu(t,theta), R=1, F=1')
 xlabel('theta')
