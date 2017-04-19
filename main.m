@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_17_Ex3'
+jobstring='april_18_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -18,7 +18,7 @@ omega_S=2*pi/24
 p=0 %time zone shift %ToDo: make function of t
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
-F=0.1 %sun cost strength
+F=10 %sun cost strength
 
 % number of times to iterate between HJB and Kolmogorov
 num_iterations=100 %ToDo
@@ -38,16 +38,18 @@ initial_dirac_omega_0=false
 initial_dirac_omega_S=false
 initial_use_last_iterate=false
 initial_use_mu_guess=true
+mu_guess_to_use='mu_guess_F_2.mat'
 use_V_guess=true
+V_guess_to_use='V_guess_F_2.mat'
 
 if use_V_guess
-    V_guess=load('V_guess.mat');
+    V_guess=load(V_guess_to_use);
     V_guess=V_guess.V_guess;
 end
 
 % this is the maximum alpha that can be reached to meet
 % the stability condition
-alpha_max=0.1
+alpha_max=0.4
 alpha_min=-alpha_max
 
 % dynamics: dtheta=(omega_0+alpha)*dt+sigma*dW
@@ -56,7 +58,7 @@ sigma=0.1
 % number of time steps
 num_time_points=1001;
 % number of grid points in theta
-num_x=256;
+num_x=256
 delta_x=2*pi/num_x;
 x_min=0
 x_max=2*pi-delta_x;
@@ -136,7 +138,7 @@ if initial_use_last_iterate
     mu(:,:)=1/(num_x*delta_x);
 end
 if initial_use_mu_guess
-    mu_guess=load('mu_guess.mat');
+    mu_guess=load(mu_guess_to_use);
     mu_guess=mu_guess.mu_guess;
     for k=1:num_time_points
         t=t_grid(k);

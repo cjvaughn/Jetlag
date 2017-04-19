@@ -1,12 +1,14 @@
 num_x=256;
 delta_x=2*pi/num_x;
-x_min=0;
+x_min=0
 x_max=2*pi-delta_x;
 x_grid=linspace(x_min,x_max,num_x);
 
+thing=V_hourly;
+
 time=1;
-f=mu_daily(time,:);
-num_time_points=size(mu_daily(:,1),1);
+f=thing(time,:);
+num_time_points=size(thing(:,1),1);
 
 plot(x_grid,f)
 title('mu(t,theta), R=1, F=1')
@@ -26,7 +28,7 @@ while true
     end
     if time>0 && time<=num_time_points
         time
-        f=mu_daily(time,:);
+        f=thing(time,:);
         
         plot(x_grid,f)
         title('mu(t,theta), R=1, F=1')
