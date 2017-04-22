@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_19_Ex1'
+jobstring='april_21_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -15,7 +15,8 @@ threshold=10^(-5)
 
 omega_0=2*pi/24.5
 omega_S=2*pi/24
-p=3*pi/4 %time zone shift %ToDo: make function of t
+p=3*pi/4 %time zone shift %ToDo: make linear function of t
+t_0=pi/3 %time of day that travel starts [0,2pi]
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
 F=0.1 %sun cost strength
