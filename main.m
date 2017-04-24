@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_21_Ex1'
+jobstring='april_23_Ex5'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -15,11 +15,12 @@ threshold=10^(-5)
 
 omega_0=2*pi/24.5
 omega_S=2*pi/24
-p=3*pi/4 %time zone shift %ToDo: make linear function of t
-t_0=pi/3 %time of day that travel starts [0,2pi]
+p=0 %time zone shift %ToDo: make linear function of t
+num_wait=0 %essentially, time of day of travel [0,23]
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
 F=0.1 %sun cost strength
+eta=0 %1.7170
 
 % number of times to iterate between HJB and Kolmogorov
 num_iterations=200 %ToDo
@@ -87,6 +88,12 @@ T
 
 t_grid=linspace(0,T,num_time_points);
 x_grid=linspace(x_min,x_max,num_x);
+
+p_transition=zeros(1,num_time_points);
+p_transition(1,18*num_t_per_hour+1+num_wait*num_t_per_hour:end)=p;
+for k=1:18*num_t_per_hour
+    p_transition(1,1+num_wait*num_t_per_hour+k)=k*p/(18*num_t_per_hour);
+end
 
 %% Initializing iterating:
 
@@ -206,12 +213,13 @@ for counter=1:num_time_points-1
             c_bar(i)=c_bar(i)+1/2*sin((x_grid(j)-x_grid(i))/2)^2*mu_curr(j)*delta_x;
         end
     end
+    p=p_transition(1,n);
     c_sun=1/2*sin((omega_S*t_n+p-x_grid)/2).^2;
 
     if K>1 && linearize_HJB
-        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun);
+        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun-eta);
     else
-        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(alpha.*alpha)+kappa*c_bar+F*c_sun);
+        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(alpha.*alpha)+kappa*c_bar+F*c_sun-eta);
     end
     
     if K>1
