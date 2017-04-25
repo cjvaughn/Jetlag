@@ -7,7 +7,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='april_23_Ex5'
+jobstring='test' %'april_24_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -16,18 +16,19 @@ threshold=10^(-5)
 omega_0=2*pi/24.5
 omega_S=2*pi/24
 p=0 %time zone shift %ToDo: make linear function of t
+linear_travel=false
 num_wait=0 %essentially, time of day of travel [0,23]
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
 F=0.1 %sun cost strength
-eta=0 %1.7170
+eta=1.7170/24
 
 % number of times to iterate between HJB and Kolmogorov
 num_iterations=200 %ToDo
 
 linearize_HJB=false
 make_T_day=true
-num_days=40
+num_days=1
 
 %initial configurations
 initial_uniform=false
@@ -90,9 +91,13 @@ t_grid=linspace(0,T,num_time_points);
 x_grid=linspace(x_min,x_max,num_x);
 
 p_transition=zeros(1,num_time_points);
-p_transition(1,18*num_t_per_hour+1+num_wait*num_t_per_hour:end)=p;
-for k=1:18*num_t_per_hour
-    p_transition(1,1+num_wait*num_t_per_hour+k)=k*p/(18*num_t_per_hour);
+if linear_travel
+    p_transition(1,18*num_t_per_hour+1+num_wait*num_t_per_hour:end)=p;
+    for k=1:18*num_t_per_hour
+        p_transition(1,1+num_wait*num_t_per_hour+k)=k*p/(18*num_t_per_hour);
+    end
+else
+    p_transition(1,:)=p;
 end
 
 %% Initializing iterating:
@@ -174,6 +179,7 @@ old_alpha=zeros(num_time_points,num_x);
 
 %% Iteration:
 while(mu_diff_max>0 && K<num_iterations+1) %K<2 means 1 iteration
+cost=0
 old_mu=mu;
 'Part B: HJB'
 %% Given mu, solve for V (explicitly backwards in time)
@@ -232,6 +238,7 @@ for counter=1:num_time_points-1
 
     max_alpha=max(max_alpha,max(abs(alpha)));
     old_alpha(n,:)=alpha;
+    cost=cost+delta_t*sum(sum((R/2*alpha.^2+kappa*c_bar+F*c_sun).*mu_curr*delta_x));
 end
 %Checking if the solution is valid:
 if K>1
@@ -343,6 +350,7 @@ value
 K=K+1;
 
 %% Final calculations and save data
+save(strcat(jobstring,'_cost.mat'),'cost')
 final_mu=squeeze(mu(num_time_points,:));
 save(strcat(jobstring,'_final_mu.mat'),'final_mu')
 
