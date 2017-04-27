@@ -1,5 +1,6 @@
 %Jetlag
 %Note: t is in hours
+% Moving frame of reference (becomes stationary)
 
 % clear memory
 clearvars
@@ -7,7 +8,7 @@ clc
 % start the timer
 tic
 % where to save the data
-jobstring='test' %'april_24_Ex1'
+jobstring='april_27_Ex1'
 
 %% Initializing Parameters:
 % for checking if sum is 1, and alpha<alpha_max, V>0
@@ -15,44 +16,34 @@ threshold=10^(-5)
 
 omega_0=2*pi/24.5
 omega_S=2*pi/24
-p=0 %time zone shift %ToDo: make linear function of t
-linear_travel=false
+p=0 %(3/4)*pi %time zone shift
 num_wait=0 %essentially, time of day of travel [0,23]
 kappa=1
 R=150 %1/(2*omega_S^4)=106.4377 %coupling cost strength %ToDo: set below R_c(0)
 F=0.1 %sun cost strength
-eta=1.7170/24
+eta=0 %1.7170/24
 
 % number of times to iterate between HJB and Kolmogorov
-num_iterations=200 %ToDo
+num_iterations=100 %ToDo
 
 linearize_HJB=false
 make_T_day=true
-num_days=1
+num_days=40
 
 %initial configurations
 initial_uniform=false
-initial_sine_0=false
-initial_cosine_0=false
-initial_sine=false
-initial_cosine=false
-initial_dirac_0=false
-initial_dirac_omega_0=false
-initial_dirac_omega_S=false
-initial_use_last_iterate=false
 initial_use_mu_guess=true
 mu_guess_to_use='mu_guess.mat'
-use_V_guess=true
+use_V_guess=false
 V_guess_to_use='V_guess.mat'
 shift_V_guess_by_p=true
-
 
 num_x=256
 if use_V_guess
     V_guess=load(V_guess_to_use);
     V_guess=V_guess.V_guess;
 end
-if shift_V_guess_by_p
+if use_V_guess && shift_V_guess_by_p
     index=round(p/(2*pi)*num_x);
     V_guess=circshift(V_guess,index,2); %shift to right for positive p
 end
@@ -90,16 +81,6 @@ T
 t_grid=linspace(0,T,num_time_points);
 x_grid=linspace(x_min,x_max,num_x);
 
-p_transition=zeros(1,num_time_points);
-if linear_travel
-    p_transition(1,18*num_t_per_hour+1+num_wait*num_t_per_hour:end)=p;
-    for k=1:18*num_t_per_hour
-        p_transition(1,1+num_wait*num_t_per_hour+k)=k*p/(18*num_t_per_hour);
-    end
-else
-    p_transition(1,:)=p;
-end
-
 %% Initializing iterating:
 
 % counter for iterations between HJB and Kolmogorov
@@ -110,60 +91,11 @@ mu=zeros(num_time_points,num_x);
 if initial_uniform
     mu(:,:)=1/(num_x*delta_x);
 end
-if initial_sine_0
-    for i=1:num_time_points
-        for j=1:num_x
-            mu(i,j)=(1+sin(omega_0*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-        end
-    end
-end
-if initial_cosine_0
-    for i=1:num_time_points
-        for j=1:num_x
-            mu(i,j)=(1+cos(omega_0*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-        end
-    end
-end
-if initial_sine
-    for i=1:num_time_points
-        for j=1:num_x
-            mu(i,j)=(1+sin(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-        end
-    end
-end
-if initial_cosine
-    for i=1:num_time_points
-        for j=1:num_x
-            mu(i,j)=(1+cos(omega_S*t_grid(i)-x_grid(j)))/(num_x*delta_x);
-        end
-    end
-end
-if initial_dirac_0
-    mu(:,1)=1/delta_x;
-end
-if initial_dirac_omega_0
-    for i=1:num_time_points
-        index=round(omega_0*t_grid(i)/delta_x)+1;
-        mu(i,index)=1/delta_x;
-    end
-end
-if initial_dirac_omega_S
-    for i=1:num_time_points
-        index=round(omega_S*t_grid(i)/delta_x)+1;
-        mu(i,index)=1/delta_x;
-    end
-end
-if initial_use_last_iterate
-    mu(:,:)=1/(num_x*delta_x);
-end
 if initial_use_mu_guess
     mu_guess=load(mu_guess_to_use);
     mu_guess=mu_guess.mu_guess;
     for k=1:num_time_points
-        t=t_grid(k);
-        index=round(t/24*num_x);
-        index=mod(index,num_x);
-        mu(k,:)=circshift(mu_guess,index,2);
+        mu(k,:)=mu_guess;
     end
 end
 value=sum(sum(mu(1,:)))*delta_x;
@@ -205,8 +137,8 @@ for counter=1:num_time_points-1
 
     right_V_x=(shift(V_curr,1)-V_curr);
     left_V_x=(V_curr-shift(V_curr,-1));
-    right=omega_0-1/R*right_V_x/delta_x;
-    left=omega_0-1/R*left_V_x/delta_x;
+    right=-omega_S+omega_0-1/R*right_V_x/delta_x;
+    left=-omega_S+omega_0-1/R*left_V_x/delta_x;
     V_x=zeros(1,num_x);
     V_x(left>0 & right>0)=right_V_x(left>0 & right>0);
     V_x(left<0 & right<0)=left_V_x(left<0 & right<0);
@@ -219,13 +151,12 @@ for counter=1:num_time_points-1
             c_bar(i)=c_bar(i)+1/2*sin((x_grid(j)-x_grid(i))/2)^2*mu_curr(j)*delta_x;
         end
     end
-    p=p_transition(1,n);
-    c_sun=1/2*sin((omega_S*t_n+p-x_grid)/2).^2;
+    c_sun=1/2*sin((p-x_grid)/2).^2;
 
     if K>1 && linearize_HJB
-        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun-eta);
+        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(-omega_S+omega_0+alpha).*V_x/delta_x+R/2*(squeeze(old_alpha(n,:)).*alpha)+kappa*c_bar+F*c_sun-eta);
     else
-        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(omega_0+alpha).*V_x/delta_x+R/2*(alpha.*alpha)+kappa*c_bar+F*c_sun-eta);
+        V(n,:)=V_curr+delta_t*(sigma^2/2*V_xx/(delta_x)^2+(-omega_S+omega_0+alpha).*V_x/delta_x+R/2*(alpha.*alpha)+kappa*c_bar+F*c_sun-eta);
     end
     
     if K>1
@@ -267,24 +198,6 @@ mu=zeros(num_time_points,num_x);
 if initial_uniform
     mu(1,:)=1/(num_x*delta_x);
 end
-if initial_sine_0
-    mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
-end
-if initial_cosine_0
-    mu(1,:)=(1+cos(x_grid))/(num_x*delta_x);
-end
-if initial_sine
-    mu(1,:)=(1+sin(x_grid))/(num_x*delta_x);
-end
-if initial_cosine
-    mu(1,:)=(1+cos(x_grid))/(num_x*delta_x);
-end
-if initial_dirac_0 || initial_dirac_omega_0 || initial_dirac_omega_S
-    mu(1,1)=1/delta_x;
-end
-if initial_use_last_iterate
-    mu(1,:)=old_mu(num_time_points,:);
-end
 if initial_use_mu_guess
     mu(1,:)=mu_guess;
 end
@@ -298,7 +211,7 @@ for n=1:num_time_points-1
     mu_xx=shift(mu_curr,1)-2*mu_curr+shift(mu_curr,-1); %centered
 
     alpha=squeeze(old_alpha(n,:));
-    drift=omega_0+alpha;
+    drift=-omega_S+omega_0+alpha;
     
     drift_minus=zeros(1,num_x);
     drift_plus=zeros(1,num_x);

@@ -4,7 +4,7 @@ x_min=0
 x_max=2*pi-delta_x;
 x_grid=linspace(x_min,x_max,num_x);
 
-thing=mu_daily;
+thing=mu_hourly;
 normalize=false;
 
 time=1;
